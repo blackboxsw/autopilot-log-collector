@@ -368,14 +368,14 @@ def collect_logs(juju):
     units.append(JujuUnit("0", get_bootstrap_ip(juju)))
 
     log.info("Collecting running processes for all units including bootstrap")
-    map(partial(_create_ps_output_file, juju), units)
+    #map(partial(_create_ps_output_file, juju), units)
 
     log.info("Creating remote tarball in parallel for units %s" % (
         ",".join([u[0] for u in units])))
-    map(partial(_create_log_tarball, juju), units)
+    m#ap(partial(_create_log_tarball, juju), units)
     log.info("Downloading logs from units")
 
-    _mp_map(partial(download_log_from_unit, juju), units)
+    _#mp_map(partial(download_log_from_unit, juju), units)
 
 
 def _mp_map(func, args):
