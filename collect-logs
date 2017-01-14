@@ -177,7 +177,7 @@ class Juju(object):
             target = "{}:{}".format(unit.name, target)
             return self._resolve("scp", source, target)
         target = "ubuntu@{}:{}".format(unit.ip, target)
-        direct_ssh_args =  self._direct_ssh_args("scp") + [source, target]
+        return self._direct_ssh_args("scp") + [source, target]
 
     def format(self, cmd, *subargs):
         """Return the formatted command.
@@ -368,14 +368,14 @@ def collect_logs(juju):
     units.append(JujuUnit("0", get_bootstrap_ip(juju)))
 
     log.info("Collecting running processes for all units including bootstrap")
-    #map(partial(_create_ps_output_file, juju), units)
+    map(partial(_create_ps_output_file, juju), units)
 
     log.info("Creating remote tarball in parallel for units %s" % (
         ",".join([u[0] for u in units])))
-    m#ap(partial(_create_log_tarball, juju), units)
+    map(partial(_create_log_tarball, juju), units)
     log.info("Downloading logs from units")
 
-    _#mp_map(partial(download_log_from_unit, juju), units)
+    _mp_map(partial(download_log_from_unit, juju), units)
 
 
 def _mp_map(func, args):
@@ -508,7 +508,6 @@ def collect_inner_logs(juju, inner_model=DEFAULT_MODEL):
     # Prepare to get the logs from the inner model.
     collect_logs = "/tmp/collect-logs"
     args = juju.push_args(landscape_unit, PRG, collect_logs)
-    import pdb; pdb.set_trace()
     call(args, env=juju.env)
     filename = "inner-logs.tar.gz"
     inner_filename = os.path.join("/tmp", filename)
