@@ -508,6 +508,7 @@ def collect_inner_logs(juju, inner_model=DEFAULT_MODEL):
     # Prepare to get the logs from the inner model.
     collect_logs = "/tmp/collect-logs"
     args = juju.push_args(landscape_unit, PRG, collect_logs)
+    import pdb; pdb.set_trace()
     call(args, env=juju.env)
     filename = "inner-logs.tar.gz"
     inner_filename = os.path.join("/tmp", filename)
