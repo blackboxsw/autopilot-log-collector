@@ -95,6 +95,7 @@ class Juju(object):
             self.env = dict(os.environ, **{self.envvar: cfgdir})
             self.ssh_key = os.path.join(cfgdir, "ssh", "juju_id_rsa")
         else:
+            # XXX This default config directory will only work on JUJU2
             default_cfgdir = os.path.join(
                 os.path.expanduser("~"), ".local", "share", "juju")
             cfgdir = os.environ.get(self.envvar, default_cfgdir)
@@ -372,7 +373,7 @@ def collect_logs(juju):
     map(partial(_create_ps_output_file, juju), units)
 
     log.info("Creating remote tarball in parallel for units %s" % (
-        ",".join([u[0] for u in units])))
+        ",".join([u.name for u in units])))
     map(partial(_create_log_tarball, juju), units)
     log.info("Downloading logs from units")
 
@@ -577,7 +578,7 @@ def bundle_logs(tmpdir, tarfile, extrafiles=[]):
 
 
 def get_juju(binary_path, model=DEFAULT_MODEL, cfgdir=None, inner=False,
-             juju_ssh=False):
+             juju_ssh=True):
     """Return a Juju for the provided info."""
     if model is DEFAULT_MODEL and inner and binary_path != JUJU1:
         # We assume that this is a Landscape-bootstrapped controller.
@@ -640,7 +641,8 @@ if __name__ == "__main__":
     parser = get_option_parser()
     args = parser.parse_args(sys.argv[1:])
     tarfile = os.path.abspath(args.tarfile)
-    juju = get_juju(args.juju, args.model, args.cfgdir, args.inner)
+    juju = get_juju(
+        args.juju, args.model, args.cfgdir, args.inner, juju_ssh=False)
     if args.inner:
         log.info("# start inner ##############################")
     try:
