@@ -235,6 +235,7 @@ def juju_status(juju):
     output = output.decode("utf-8").strip()
     return yaml.load(output)
 
+
 def get_bootstrap_ip(juju, status=None):
     if status is None:
         status = juju_status(juju)

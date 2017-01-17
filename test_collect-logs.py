@@ -262,7 +262,7 @@ class MainTestCase(_BaseTestCase):
 
 class CollectLogsTestCase(_BaseTestCase):
 
-    MOCKED = ("get_units", "check_output", "call")
+    MOCKED = ("get_units", "get_bootstrap_ip", "check_output", "call")
 
     def setUp(self):
         super(CollectLogsTestCase, self).setUp()
@@ -274,6 +274,7 @@ class CollectLogsTestCase(_BaseTestCase):
             script.JujuUnit("haproxy/0", "1.2.3.7"),
             ]
         script.get_units.return_value = self.units[:]
+        script.get_bootstrap_ip.return_value = self.units[0].ip
 
         self.mp_map_orig = script._mp_map
         script._mp_map = lambda f, a: map(f, a)
@@ -314,7 +315,7 @@ class CollectLogsTestCase(_BaseTestCase):
                                       ))
         # for _create_log_tarball()
         for unit in units:
-            tarfile = "/tmp/logs_{}.tar".format(unit.replace("/", "-")
+            tarfile = "/tmp/logs_{}.tar".format(unit.name.replace("/", "-")
                                                 if unit.name != "0"
                                                 else "bootstrap")
             cmd = ("sudo tar --ignore-failed-read"
@@ -495,7 +496,7 @@ class CollectLogsTestCase(_BaseTestCase):
         self.assertEqual(script.check_output.call_count, len(units) * 3)
         self.assertEqual(script.call.call_count, len(units) * 2 - 1)
         for unit in units:
-            if unit != "0":
+            if unit.name != "0":
                 name = unit.name.replace("/", "-")
             else:
                 name = "bootstrap"
