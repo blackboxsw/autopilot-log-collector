@@ -3,6 +3,7 @@
 # To run: "python -m unittest test_collect-logs"
 
 import errno
+from fixtures import EnvironmentVariableFixture, TestWithFixtures
 import os
 import os.path
 import shutil
@@ -85,7 +86,7 @@ class _BaseTestCase(TestCase):
         self.assertEqual(cwd, dirname)
 
 
-class GetJujuTests(TestCase):
+class GetJujuTests(TestWithFixtures):
 
     def test_juju1_outer(self):
         """
@@ -116,6 +117,52 @@ class GetJujuTests(TestCase):
 
         expected = script.Juju("juju-2.1", model=None)
         self.assertEqual(juju, expected)
+
+    def test_get_args_without_ssh_uses_ip_address(self):
+        """
+        When juju_ssh is False, get_juju returns direct ssh commands from
+        Juju.ssh_args using using the unit's IP address instead of hostname.
+        """
+        self.useFixture(
+            EnvironmentVariableFixture("JUJU_DATA", "some-dir"))
+        juju = script.get_juju(script.JUJU2, inner=False, juju_ssh=False)
+        expected = [
+            "/usr/bin/ssh", "-o", "StrictHostKeyChecking=no",
+            "-i", "some-dir/ssh/juju_id_rsa",
+            "ubuntu@10.1.1.1", "ls tmp"]
+        self.assertFalse(juju.juju_ssh)
+        unit = script.JujuUnit("ubuntu/0", "10.1.1.1")
+        self.assertEqual(expected, juju.ssh_args(unit,"ls tmp"))
+
+    def test_pull_args_without_ssh_uses_ip_address(self):
+        """
+        When juju_ssh is False, get_juju returns direct ssh commands from
+        Juju.pull_args using using the unit's IP address instead of hostname.
+        """
+        self.useFixture(
+            EnvironmentVariableFixture("JUJU_DATA", "some-dir"))
+        juju = script.get_juju(script.JUJU2, inner=False, juju_ssh=False)
+        expected = [
+            "/usr/bin/scp", "-o", "StrictHostKeyChecking=no",
+            "-i", "some-dir/ssh/juju_id_rsa",
+            "ubuntu@10.1.1.1:file1", "."]
+        unit = script.JujuUnit("ubuntu/0", "10.1.1.1")
+        self.assertEqual(expected, juju.pull_args(unit, "file1"))
+
+    def test_push_args_without_ssh_uses_ip_address(self):
+        """
+        When juju_ssh is False, get_juju returns direct ssh commands from
+        Juju.push_args using using the unit's IP address instead of hostname.
+        """
+        self.useFixture(
+            EnvironmentVariableFixture("JUJU_DATA", "some-dir"))
+        juju = script.get_juju(script.JUJU2, inner=False, juju_ssh=False)
+        expected = [
+            "/usr/bin/scp", "-o", "StrictHostKeyChecking=no",
+            "-i", "some-dir/ssh/juju_id_rsa",
+            "file1", "ubuntu@10.1.1.1:/tmp/blah"]
+        unit = script.JujuUnit("ubuntu/0", "10.1.1.1")
+        self.assertEqual(expected, juju.push_args(unit, "file1", "/tmp/blah"))
 
     def test_juju2_inner(self):
         """
