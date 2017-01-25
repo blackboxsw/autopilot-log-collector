@@ -269,7 +269,7 @@ def get_units(juju, status=None):
                 if not unit.get("public-address"):
                     log.warning( 
                         "Couldn't obtain public-address for unit {}".format(
-                            unit.name))
+                            name))
                     juju_units.append(JujuUnit(name, NO_PUBLIC_ADDRESS))
                 else:
                     juju_units.append(JujuUnit(name, unit["public-address"]))

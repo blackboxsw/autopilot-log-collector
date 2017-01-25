@@ -86,6 +86,58 @@ class _BaseTestCase(TestCase):
         self.assertEqual(cwd, dirname)
 
 
+class GetUnitsTests(TestCase):
+
+    def test_get_units_returns_juju_units_with_name_and_ip(self):
+        """get_units returns a list of JujuUnits with names and ips."""
+        status = {
+            "applications": {
+                "ubuntu": {
+                    "units": {"ubuntu/1" : {"public-address": "1.2.3.4"}}},
+                "ntp": {
+                    "units": {"ntp/1" : {"public-address": "1.2.3.5"}}}}
+        }
+        expected = [
+            script.JujuUnit("ubuntu/1", "1.2.3.4"), 
+            script.JujuUnit("ntp/1", "1.2.3.5")]
+        self.assertItemsEqual(
+            expected, script.get_units(juju=None, status=status))
+
+    def test_get_units_marks_units_with_no_public_address(self):
+        """
+        get_units sets ip to NO_PUBLIC_ADDRESS for JujuUnits which do not
+        report a public-address key.
+        """
+        status = {
+            "applications": {
+                "ubuntu": {
+                    "units": {"ubuntu/1" : {"public-address": "1.2.3.4"}}},
+                "ntp": {
+                    "units": {"ntp/1" : {}}}}
+        }
+        expected = [
+            script.JujuUnit("ubuntu/1", "1.2.3.4"), 
+            script.JujuUnit("ntp/1", script.NO_PUBLIC_ADDRESS)]
+        self.assertItemsEqual(
+            expected, script.get_units(juju=None, status=status))
+
+    def test_get_units_ignores_subordinate_applications(self):
+        """get_units ignores subordinate units."""
+        status = {
+            "applications": {
+                "ubuntu": {
+                    "units": {"ubuntu/1" : {"public-address": "1.2.3.4"}}},
+                "landscape-client": {
+                    "subordinate-to": ["ubuntu"],
+                    "units": {
+                        "ceilometer-agent/1" : {"public-address": "1.2.3.5"}}}}
+        }
+        expected = [
+            script.JujuUnit("ubuntu/1", "1.2.3.4")]
+        self.assertItemsEqual(
+            expected, script.get_units(juju=None, status=status))
+
+
 class GetJujuTests(TestWithFixtures):
 
     def test_juju1_outer(self):
