@@ -1,0 +1,64 @@
+#!/usr/bin/python
+# commit-msg hook to report to IRC
+
+
+import re
+import socket
+from subprocess import check_output, CalledProcessError
+import sys
+
+
+
+def project_name_from_git_remote(git_remote="origin"):
+    """Return the origin's 'project' name."""
+    output = check_output(["/usr/bin/git", "remote", "show", git_remote])
+    for line in output.split('\n'):
+        match = re.match(r".*Fetch URL: .*\/(.*).git", line)
+        if match:
+            return match.group(1)
+
+
+def git_config(name):
+    """Get the value for a specific git config name."""
+    try:
+        check_output(["/usr/bin/git", "config", name]).strip()
+    except CalledProcessError:
+        raise RuntimeError(
+            "Git configuration not specified for {0}.\n"
+            "Maybe 'git config --global {0}=something'".format(name))
+
+
+def publish_commit_message(message_file):
+    """Publishes the git commit message to IRC."""
+    with open(message_file) as stream:
+        commit_message = stream.read()
+    author = git_config("user.name")
+    message_branch_prefix = project_name_from_git_remote("origin")
+    message_host = git_config("message.host")
+    message_port = int(git_config("message.port"))
+    message_password = git_config("message.password")
+    message_channel = git_config("message.channel")
+    revision = len(check_output(
+        ["/usr/bin/git", "log", "--oneline"]).splitlines())
+    message = ("%s r%d committed by %s\r\n%s"
+                   % (message_branch_prefix, revision, author,
+                      commit_message))
+    s = socket.socket()
+    try:
+        s.connect((message_host, message_port))
+    except:
+        raise RuntimeError(
+            "Couldn't connect to publish-bot at %s:%s." % (
+                message_host, message_port))
+
+    packit = ''
+    for line in message.splitlines():
+        packit += '%s:#%s:%s\r\n' % (message_password, message_channel, line)
+    s.sendall(packit)
+    s.close()
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        raise RuntimeError(
+            "post-commit hook expected commit message on the commandline")
+    publish_commit_message(sys.argv[1])
