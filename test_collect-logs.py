@@ -134,6 +134,19 @@ class GetJujuTests(TestWithFixtures):
         unit = script.JujuUnit("ubuntu/0", "10.1.1.1")
         self.assertEqual(expected, juju.ssh_args(unit,"ls tmp"))
 
+    def test_get_args_without_ssh_missing_public_address_uses_juju_ssh(self):
+        """
+        When juju_ssh is False, but juju status doesn't report public-address
+        for a unit, ssh_args falls back to using 'juju ssh'.
+        """
+        self.useFixture(
+            EnvironmentVariableFixture("JUJU_DATA", "some-dir"))
+        juju = script.get_juju(script.JUJU2, inner=False, juju_ssh=False)
+        expected = ["juju-2.1", "ssh", "ubuntu/0", "ls tmp"]
+        self.assertFalse(juju.juju_ssh)
+        unit = script.JujuUnit("ubuntu/0", script.NO_PUBLIC_ADDRESS)
+        self.assertEqual(expected, juju.ssh_args(unit,"ls tmp"))
+
     def test_pull_args_without_ssh_uses_ip_address(self):
         """
         When juju_ssh is False, get_juju returns direct ssh commands from
@@ -149,6 +162,18 @@ class GetJujuTests(TestWithFixtures):
         unit = script.JujuUnit("ubuntu/0", "10.1.1.1")
         self.assertEqual(expected, juju.pull_args(unit, "file1"))
 
+    def test_pull_args_without_ssh_missing_public_address_uses_juju_ssh(self):
+        """
+        When juju_ssh is False, but juju status doesn't report public-address
+        for a unit, Juju.pull_args falls back to using 'juju ssh'.
+        """
+        self.useFixture(
+            EnvironmentVariableFixture("JUJU_DATA", "some-dir"))
+        juju = script.get_juju(script.JUJU2, inner=False, juju_ssh=False)
+        expected = ["juju-2.1", "scp", "ubuntu/0:file1", "."]
+        unit = script.JujuUnit("ubuntu/0", script.NO_PUBLIC_ADDRESS)
+        self.assertEqual(expected, juju.pull_args(unit, "file1"))
+
     def test_push_args_without_ssh_uses_ip_address(self):
         """
         When juju_ssh is False, get_juju returns direct ssh commands from
@@ -162,6 +187,18 @@ class GetJujuTests(TestWithFixtures):
             "-i", "some-dir/ssh/juju_id_rsa",
             "file1", "ubuntu@10.1.1.1:/tmp/blah"]
         unit = script.JujuUnit("ubuntu/0", "10.1.1.1")
+        self.assertEqual(expected, juju.push_args(unit, "file1", "/tmp/blah"))
+
+    def test_push_args_without_ssh_missing_public_address_uses_juju_ssh(self):
+        """
+        When juju_ssh is False, but juju status doesn't report public-address
+        for a unit, Juju.push_args falls back to using 'juju ssh'.
+        """
+        self.useFixture(
+            EnvironmentVariableFixture("JUJU_DATA", "some-dir"))
+        juju = script.get_juju(script.JUJU2, inner=False, juju_ssh=False)
+        expected = ["juju-2.1", "scp", "file1", "ubuntu/0:/tmp/blah"]
+        unit = script.JujuUnit("ubuntu/0", script.NO_PUBLIC_ADDRESS)
         self.assertEqual(expected, juju.push_args(unit, "file1", "/tmp/blah"))
 
     def test_juju2_inner(self):
