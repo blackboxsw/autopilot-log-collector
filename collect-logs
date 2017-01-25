@@ -54,6 +54,10 @@ DEFAULT_MODEL = object()
 VERBOSE = False
 
 JujuUnit = namedtuple("JujuUnit", ["name", "ip"])
+
+# This contant is a marker to indicate that public-address wasn't found for a
+# JujuUnit. In these cases, 'juju ssh <unit_name>' will be used instead of
+# 'ssh ubuntu@<unit_ip>'
 NO_PUBLIC_ADDRESS = "No public-address found"
 
 if VERBOSE:
